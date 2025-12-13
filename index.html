@@ -446,10 +446,7 @@
             const charKey = currentState.target;
             const config = CHAR_CONFIG[charKey];
             const code = currentState.currentImgCode;
-            
-            // Use prefix based format (e.g. Yura_.01.webp)
-            const filename = `${config.prefix}${code}.webp`;
-            const url = `${BASE_URL}${config.code}/${filename}`;
+            const url = `${BASE_URL}${config.code}/${config.prefix}${code}.webp`;
             
             const imgEl = document.getElementById('disp-img');
             if (imgEl.src !== url) imgEl.src = url;
