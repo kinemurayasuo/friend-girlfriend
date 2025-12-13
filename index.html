@@ -10,6 +10,7 @@
             --c-yura: #ff4757;
             --c-mina: #3742fa;
             --c-minji: #a55eea;
+            --c-serin: #2ed573;
             --bg-gray: #f1f2f6;
             --text-main: #2f3542;
             --border-color: #dcdde1;
@@ -65,6 +66,7 @@
         .tab-btn[data-target="yura"].active { color: var(--c-yura); border-left: 4px solid var(--c-yura); }
         .tab-btn[data-target="mina"].active { color: var(--c-mina); border-left: 4px solid var(--c-mina); }
         .tab-btn[data-target="minji"].active { color: var(--c-minji); border-left: 4px solid var(--c-minji); }
+        .tab-btn[data-target="serin"].active { color: var(--c-serin); border-left: 4px solid var(--c-serin); }
 
         /* 콘텐츠 영역 */
         .content-area { flex: 1; position: relative; background: #fff; display: flex; flex-direction: column; }
@@ -189,6 +191,7 @@
             <div class="tab-btn active" onclick="changeChar('yura')" data-target="yura"><span>A</span><small>A1</small></div>
             <div class="tab-btn" onclick="changeChar('mina')" data-target="mina"><span>B</span><small>A2</small></div>
             <div class="tab-btn" onclick="changeChar('minji')" data-target="minji"><span>C</span><small>A3</small></div>
+            <div class="tab-btn" onclick="changeChar('serin')" data-target="serin"><span>D</span><small>A4</small></div>
         </nav>
 
         <main class="content-area">
@@ -266,28 +269,35 @@
         // -----------------------------------------------------------
         const BASE_URL = "https://images.httpskaha.me/FGS/";
 
-        const EMOTION_LIST = [
-            "standing","annoyed","aroused","blushing_shyly","bored","confused","contemptuous","curious","angry",
-            "fidgeting_shyly","crying_with_eyes_closed","dazed","crying_with_eyes_open","depressed","disappointed",
-            "disgusted","embarrassed","coughing","flustered","forced_smile","full-face_blush","giggling","guilty",
-            "happy_smile","indifferent","joyful","laughing","looking_away_shyly","lovestuck","nervous_pout",
-            "nervous_smile","nervous","pout","proud","sad","scared","seductive_smile","serious","shocked",
-            "sleepy","smile","smirk","smug","surprised","thinking","worried","evil_smile","comforted","childlike_whining"
-        ];
+        // Situation Codes: 01 ~ 20
+        const SITUATION_CODES = [];
+        for(let i=1; i<=20; i++) SITUATION_CODES.push(String(i).padStart(2, '0'));
+
+        // Action Codes: 21 ~ 110
         const ACTION_CODES = [];
-        for(let i=21; i<=110; i++) ACTION_CODES.push(i);
+        for(let i=21; i<=110; i++) ACTION_CODES.push(String(i));
+
+        // Mina (A2) Whitelist
+        const MINA_ACTION_CODES = [
+            "21", "22", "24", "25", "26", "28", "30", "32", "33", "34", "35", "37", "38", "40", 
+            "41", "42", "44", "45", "46", "48", "50", "51", "52", "54", "55", "56", "58", "60", 
+            "61", "62", "64", "65", "66", "68", "70", "71", "72", "74", "75", "76", "78", "80", 
+            "81", "82", "84", "85", "86", "88", "90", "91", "92", "94", "95", "96", "98", "100", 
+            "101", "102", "104", "105", "106", "108", "110"
+        ];
 
         const CHAR_CONFIG = {
-            yura:  { name: "최유라", code: "A1", prefix: "Yura_." },
-            mina:  { name: "김민아", code: "A2", prefix: "Minah_." },
-            minji: { name: "김민지", code: "A3", prefix: "Minji_." }
+            yura:  { name: "최유라", code: "A1" },
+            mina:  { name: "김민아", code: "A2" },
+            minji: { name: "김민지", code: "A3" },
+            serin: { name: "한세린", code: "A4" }
         };
 
         // 🟢 [상태 저장소] 외부 노드에서 이 변수명을 맞춰주세요.
         let currentState = {
             target: 'yura',
             mode: 'emotion',
-            currentImgCode: 'standing',
+            currentImgCode: '01',
             
             data: {
                 yura: {
@@ -308,6 +318,14 @@
                 },
                 minji: {
                     location: "연습실",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
+                },
+                serin: {
+                    location: "도서관",
                     emotion: "기본😐",
                     action: "대기 중",
                     u_favorability: 0, k_favorability: 0,
@@ -345,13 +363,13 @@
 
         function changeChar(charKey) {
             currentState.target = charKey;
-            currentState.currentImgCode = 'standing';
+            currentState.currentImgCode = '01'; // Reset to default situation
             
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
 
             const panel = document.getElementById('main-panel');
-            panel.classList.remove('yura', 'mina', 'minji');
+            panel.classList.remove('yura', 'mina', 'minji', 'serin');
             panel.classList.add(charKey);
 
             renderUI();
@@ -428,7 +446,14 @@
             const charKey = currentState.target;
             const config = CHAR_CONFIG[charKey];
             const code = currentState.currentImgCode;
-            const url = `${BASE_URL}${config.code}/${config.prefix}${code}.webp`;
+            
+            // Determine Type (Situation vs Action)
+            let type = "Situation";
+            if (parseInt(code) >= 21) type = "Action";
+            
+            // Format: A1_Situation_01.webp
+            const filename = `${config.code}_${type}_${code}.webp`;
+            const url = `${BASE_URL}${config.code}/${filename}`;
             
             const imgEl = document.getElementById('disp-img');
             if (imgEl.src !== url) imgEl.src = url;
@@ -438,7 +463,12 @@
             const container = document.getElementById('code-list');
             container.innerHTML = ''; 
 
-            const list = currentState.mode === 'emotion' ? EMOTION_LIST : ACTION_CODES;
+            let list = currentState.mode === 'emotion' ? SITUATION_CODES : ACTION_CODES;
+
+            // Filter for Mina (A2) in Action mode
+            if (currentState.target === 'mina' && currentState.mode === 'action') {
+                list = list.filter(code => MINA_ACTION_CODES.includes(code));
+            }
 
             list.forEach(code => {
                 const btn = document.createElement('div');
