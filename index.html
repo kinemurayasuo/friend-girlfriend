@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Status Viewer (Variable Updated)</title>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        :root {
+            --c-yura: #ff4757;
+            --c-mina: #3742fa;
+            --c-minji: #a55eea;
+            --bg-gray: #f1f2f6;
+            --text-main: #2f3542;
+            --border-color: #dcdde1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #ced6e0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Pretendard', sans-serif;
+            user-select: none;
+        }
+
+        /* 400x600 메인 프레임 */
+        .device-frame {
+            width: 400px;
+            height: 600px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            border: 4px solid #fff;
+        }
+
+        /* [좌측 사이드바] */
+        .sidebar {
+            width: 60px;
+            height: 100%;
+            background-color: #f1f2f6;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .tab-btn {
+            width: 100%; height: 60px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            cursor: pointer; color: #a4b0be; transition: 0.2s;
+            border-bottom: 1px solid #e1e2e6;
+        }
+        .tab-btn span { font-size: 1.1rem; font-weight: 800; }
+        .tab-btn small { font-size: 0.55rem; margin-top: 2px; }
+        
+        .tab-btn.active { background: #fff; width: 61px; margin-right: -1px; color: var(--text-main); }
+        .tab-btn[data-target="yura"].active { color: var(--c-yura); border-left: 4px solid var(--c-yura); }
+        .tab-btn[data-target="mina"].active { color: var(--c-mina); border-left: 4px solid var(--c-mina); }
+        .tab-btn[data-target="minji"].active { color: var(--c-minji); border-left: 4px solid var(--c-minji); }
+
+        /* [우측 콘텐츠 영역] */
+        .content-area { flex: 1; position: relative; background: #fff; display: flex; flex-direction: column; }
+
+        /* 패널 공통 */
+        .char-panel {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            opacity: 0; visibility: hidden; transition: 0.2s;
+        }
+        .char-panel.active { opacity: 1; visibility: visible; }
+
+        /* 1. 상단 이미지 뷰어 (Full Fill) */
+        .img-viewport {
+            height: 250px;
+            width: 100%;
+            background-color: #eee;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .char-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 화면 꽉 채우기 */
+            object-position: top center; /* 얼굴 중심 */
+            transition: opacity 0.3s;
+        }
+
+        .name-tag {
+            position: absolute; top: 12px; left: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 5;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* 2. 중단 상태창 */
+        .status-section {
+            padding: 12px;
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .location-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .loc-text { font-size: 0.85rem; font-weight: 700; color: #2f3542; display: flex; align-items: center; gap: 6px; }
+        .btn-move {
+            background: #2f3542; color: #fff;
+            border: none; padding: 6px 12px;
+            border-radius: 6px; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; transition: 0.2s;
+        }
+        .btn-move:hover { opacity: 0.8; }
+        .yura .btn-move { background: var(--c-yura); }
+        .mina .btn-move { background: var(--c-mina); }
+        .minji .btn-move { background: var(--c-minji); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            text-align: center;
+        }
+        .stat-box {
+            background: #fff; border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 6px 4px;
+        }
+        .s-label { display: block; font-size: 0.65rem; color: #a4b0be; margin-bottom: 3px; font-weight: 600; }
+        .s-val { font-size: 0.9rem; font-weight: 800; color: #2f3542; }
+        .v-u { color: #ff4757; } .v-n { color: #2f3542; }
+
+        /* 3. 하단 컨트롤 패널 */
+        .control-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fdfdfd;
+            overflow: hidden;
+        }
+
+        .mode-switch {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: #f1f2f6;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #a4b0be;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mode-btn.active {
+            background: #fff;
+            color: #2f3542;
+            border-bottom: 3px solid #2f3542;
+        }
+
+        .code-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 6px;
+        }
+        
+        .chip-btn {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            background: #fff;
+            border: 1px solid #dcdde1;
+            border-radius: 16px;
+            cursor: pointer;
+            color: #57606f;
+            transition: 0.1s;
+            font-weight: 600;
+        }
+        .chip-btn:hover { background: #f1f2f6; border-color: #747d8c; color: #2f3542; }
+        .chip-btn.active { background: #2f3542; color: #fff; border-color: #2f3542; }
+        .chip-btn.nsfw { border-color: #fab1a0; color: #d63031; background: #fff0f0; }
+        .chip-btn.nsfw.active { background: #d63031; color: #fff; border-color: #d63031; }
+        .code-list-container::-webkit-scrollbar { width: 6px; }
+        .code-list-container::-webkit-scrollbar-thumb { background: #dcdde1; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="device-frame">
+        <nav class="sidebar">
+            <div class="tab-btn active" onclick="changeChar('yura')" data-target="yura"><span>A</span><small>A1</small></div>
+            <div class="tab-btn" onclick="changeChar('mina')" data-target="mina"><span>B</span><small>A2</small></div>
+            <div class="tab-btn" onclick="changeChar('minji')" data-target="minji"><span>C</span><small>A3</small></div>
+        </nav>
+
+        <main class="content-area">
+            
+            <div id="main-panel" class="char-panel active yura">
+                
+                <!-- 상단: 이미지 -->
+                <div class="img-viewport">
+                    <div class="name-tag" id="disp-name">최유라 (A1)</div>
+                    <img id="disp-img" class="char-img" src="" alt="Character">
+                </div>
+
+                <!-- 중단: 상태 -->
+                <div class="status-section">
+                    <div class="location-row">
+                        <div class="loc-text">
+                            <span>📍</span><span id="disp-loc">장소 미정</span>
+                        </div>
+                        <button class="btn-move" onclick="moveToLocation()">이동하기</button>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="s-label">💗 호감(U/남)</span>
+                            <span class="s-val"><span class="v-u" id="val-u-fav">0</span> / <span class="v-n" id="val-k-fav">0</span></span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="s-label">🔗 의존(U/남)</span>
+                            <span class="s-val"><span class="v-u" id="val-u-dep">0</span> / <span class="v-n" id="val-k-dep">0</span></span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="s-label">💦 횟수(U/남)</span>
+                            <span class="s-val"><span class="v-u" id="val-u-cnt">0</span> / <span class="v-n" id="val-k-cnt">0</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 하단: 컨트롤 -->
+                <div class="control-panel">
+                    <div class="mode-switch">
+                        <div class="mode-btn active" onclick="setMode('emotion')" id="tab-emotion">😊 감정/일상</div>
+                        <div class="mode-btn" onclick="setMode('action')" id="tab-action">🔞 성행위</div>
+                    </div>
+                    <div class="code-list-container" id="code-list">
+                        <!-- 버튼 목록 -->
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // -----------------------------------------------------------
+        // 1. 설정 및 데이터
+        // -----------------------------------------------------------
+        const BASE_URL = "https://images.httpskaha.me/FGS/";
+
+        const EMOTION_LIST = [
+            "standing","annoyed","aroused","blushing_shyly","bored","confused","contemptuous","curious","angry",
+            "fidgeting_shyly","crying_with_eyes_closed","dazed","crying_with_eyes_open","depressed","disappointed",
+            "disgusted","embarrassed","coughing","flustered","forced_smile","full-face_blush","giggling","guilty",
+            "happy_smile","indifferent","joyful","laughing","looking_away_shyly","lovestuck","nervous_pout",
+            "nervous_smile","nervous","pout","proud","sad","scared","seductive_smile","serious","shocked",
+            "sleepy","smile","smirk","smug","surprised","thinking","worried","evil_smile","comforted","childlike_whining"
+        ];
+
+        const ACTION_CODES = [];
+        for(let i=21; i<=110; i++) ACTION_CODES.push(i);
+
+        const CHAR_CONFIG = {
+            yura:  { name: "최유라", code: "A1", prefix: "Yura_." },
+            mina:  { name: "김민아", code: "A2", prefix: "Minah_." },
+            minji: { name: "김민지", code: "A3", prefix: "Minji_." }
+        };
+
+        // 🟢 [핵심] 요청하신 변수명으로 데이터 구조 변경
+        let currentState = {
+            target: 'yura',
+            mode: 'emotion',
+            currentImgCode: 'standing',
+            
+            // 데이터 초기화
+            data: {
+                yura: {
+                    location: "",           // 장소
+                    u_favorability: 0,      // 호감u
+                    k_favorability: 0,      // 호감남
+                    u_dependency: 0,        // 의존u
+                    k_dependency: 0,        // 의존남
+                    u_count: 0,             // 횟수
+                    k_count: 0              // 횟수남
+                },
+                mina: {
+                    location: "",
+                    u_favorability: 0,
+                    k_favorability: 0,
+                    u_dependency: 0,
+                    k_dependency: 0,
+                    u_count: 0,
+                    k_count: 0
+                },
+                minji: {
+                    location: "",
+                    u_favorability: 0,
+                    k_favorability: 0,
+                    u_dependency: 0,
+                    k_dependency: 0,
+                    u_count: 0,
+                    k_count: 0
+                }
+            }
+        };
+
+        // -----------------------------------------------------------
+        // 2. 기능 로직
+        // -----------------------------------------------------------
+
+        function changeChar(charKey) {
+            currentState.target = charKey;
+            currentState.currentImgCode = 'standing'; // 리셋
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
+
+            const panel = document.getElementById('main-panel');
+            panel.classList.remove('yura', 'mina', 'minji');
+            panel.classList.add(charKey);
+
+            renderUI();
+        }
+
+        function setMode(mode) {
+            currentState.mode = mode;
+            document.getElementById('tab-emotion').classList.toggle('active', mode === 'emotion');
+            document.getElementById('tab-action').classList.toggle('active', mode === 'action');
+            renderCodeList();
+        }
+
+        // 장소 이동 (변수명: location 사용)
+        function moveToLocation() {
+            const charName = CHAR_CONFIG[currentState.target].name;
+            const newLoc = prompt(`[${charName}] 이동할 장소를 입력하세요:`, "침실");
+            if(newLoc) {
+                // 데이터 업데이트
+                currentState.data[currentState.target].location = newLoc;
+                alert(`[System] ${charName} 이(가) [${newLoc}]으로 이동했습니다.`);
+                renderUI();
+            }
+        }
+
+        function selectCode(code) {
+            currentState.currentImgCode = code;
+            updateImage();
+            document.querySelectorAll('.chip-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.code == code);
+            });
+        }
+
+        // -----------------------------------------------------------
+        // 3. UI 렌더링 (변수명 매핑)
+        // -----------------------------------------------------------
+
+        function renderUI() {
+            const charKey = currentState.target;
+            const config = CHAR_CONFIG[charKey];
+            
+            // 현재 캐릭터의 데이터 객체 가져오기
+            const d = currentState.data[charKey];
+
+            // 텍스트 갱신
+            document.getElementById('disp-name').innerText = `${config.name} (${config.code})`;
+            
+            // 🟢 변수 매핑 적용
+            document.getElementById('disp-loc').innerText = d.location || "장소 미정";
+            
+            document.getElementById('val-u-fav').innerText = d.u_favorability;
+            document.getElementById('val-k-fav').innerText = d.k_favorability;
+            
+            document.getElementById('val-u-dep').innerText = d.u_dependency;
+            document.getElementById('val-k-dep').innerText = d.k_dependency;
+            
+            document.getElementById('val-u-cnt').innerText = d.u_count;
+            document.getElementById('val-k-cnt').innerText = d.k_count;
+
+            updateImage();
+            renderCodeList();
+        }
+
+        function updateImage() {
+            const charKey = currentState.target;
+            const config = CHAR_CONFIG[charKey];
+            const code = currentState.currentImgCode;
+            const url = `${BASE_URL}${config.code}/${config.prefix}${code}.webp`;
+            
+            const imgEl = document.getElementById('disp-img');
+            if (imgEl.src !== url) {
+                imgEl.src = url;
+            }
+        }
+
+        function renderCodeList() {
+            const container = document.getElementById('code-list');
+            container.innerHTML = ''; 
+
+            const list = currentState.mode === 'emotion' ? EMOTION_LIST : ACTION_CODES;
+
+            list.forEach(code => {
+                const btn = document.createElement('div');
+                btn.className = 'chip-btn';
+                btn.innerText = code;
+                btn.dataset.code = code;
+                
+                if(code == currentState.currentImgCode) btn.classList.add('active');
+                if(currentState.mode === 'action') btn.classList.add('nsfw');
+
+                btn.onclick = () => selectCode(code);
+                container.appendChild(btn);
+            });
+        }
+
+        // 초기 실행
+        renderUI();
+
+    </script>
+</body>
+</html>
