@@ -452,17 +452,7 @@
             if (parseInt(code) >= 21) type = "Action";
             
             // Format: A1_Situation_01.webp
-            // const filename = `${config.code}_${type}_${code}.webp`;
-            
-            // Reverting to prefix-based format as per user request (implied)
-            // If the code is numeric (new system), we might need a specific format.
-            // But if the user said "Address is blown away", they likely want the old prefix back.
-            // Let's try to support the prefix + code format which is likely what the server expects.
-            // Example: Yura_.01.webp or Yura_.Situation_01.webp?
-            // Given the user's anger, I will revert to the safest assumption: Prefix + Code.
-            // If the code is just a number "01", "21", then: Yura_.01.webp
-            
-            const filename = `${config.prefix}${code}.webp`;
+            const filename = `${config.code}_${type}_${code}.webp`;
             const url = `${BASE_URL}${config.code}/${filename}`;
             
             const imgEl = document.getElementById('disp-img');
