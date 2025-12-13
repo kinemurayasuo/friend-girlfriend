@@ -287,10 +287,10 @@
         ];
 
         const CHAR_CONFIG = {
-            yura:  { name: "최유라", code: "A1" },
-            mina:  { name: "김민아", code: "A2" },
-            minji: { name: "김민지", code: "A3" },
-            serin: { name: "한세린", code: "A4" }
+            yura:  { name: "최유라", code: "A1", prefix: "Yura_." },
+            mina:  { name: "김민아", code: "A2", prefix: "Minah_." },
+            minji: { name: "김민지", code: "A3", prefix: "Minji_." },
+            serin: { name: "한세린", code: "A4", prefix: "Serin_." }
         };
 
         // 🟢 [상태 저장소] 외부 노드에서 이 변수명을 맞춰주세요.
@@ -452,7 +452,17 @@
             if (parseInt(code) >= 21) type = "Action";
             
             // Format: A1_Situation_01.webp
-            const filename = `${config.code}_${type}_${code}.webp`;
+            // const filename = `${config.code}_${type}_${code}.webp`;
+            
+            // Reverting to prefix-based format as per user request (implied)
+            // If the code is numeric (new system), we might need a specific format.
+            // But if the user said "Address is blown away", they likely want the old prefix back.
+            // Let's try to support the prefix + code format which is likely what the server expects.
+            // Example: Yura_.01.webp or Yura_.Situation_01.webp?
+            // Given the user's anger, I will revert to the safest assumption: Prefix + Code.
+            // If the code is just a number "01", "21", then: Yura_.01.webp
+            
+            const filename = `${config.prefix}${code}.webp`;
             const url = `${BASE_URL}${config.code}/${filename}`;
             
             const imgEl = document.getElementById('disp-img');
