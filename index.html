@@ -269,9 +269,14 @@
         // -----------------------------------------------------------
         const BASE_URL = "https://images.httpskaha.me/FGS/";
 
-        // Situation Codes: 01 ~ 20
-        const SITUATION_CODES = [];
-        for(let i=1; i<=20; i++) SITUATION_CODES.push(String(i).padStart(2, '0'));
+        const EMOTION_LIST = [
+            "standing","annoyed","aroused","blushing_shyly","bored","confused","contemptuous","curious","angry",
+            "fidgeting_shyly","crying_with_eyes_closed","dazed","crying_with_eyes_open","depressed","disappointed",
+            "disgusted","embarrassed","coughing","flustered","forced_smile","full-face_blush","giggling","guilty",
+            "happy_smile","indifferent","joyful","laughing","looking_away_shyly","lovestuck","nervous_pout",
+            "nervous_smile","nervous","pout","proud","sad","scared","seductive_smile","serious","shocked",
+            "sleepy","smile","smirk","smug","surprised","thinking","worried","evil_smile","comforted","childlike_whining"
+        ];
 
         // Action Codes: 21 ~ 110
         const ACTION_CODES = [];
@@ -297,7 +302,7 @@
         let currentState = {
             target: 'yura',
             mode: 'emotion',
-            currentImgCode: '01',
+            currentImgCode: 'standing',
             
             data: {
                 yura: {
@@ -363,7 +368,7 @@
 
         function changeChar(charKey) {
             currentState.target = charKey;
-            currentState.currentImgCode = '01'; // Reset to default situation
+            currentState.currentImgCode = 'standing'; // Reset to default situation
             
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
@@ -456,7 +461,7 @@
             const container = document.getElementById('code-list');
             container.innerHTML = ''; 
 
-            let list = currentState.mode === 'emotion' ? SITUATION_CODES : ACTION_CODES;
+            let list = currentState.mode === 'emotion' ? EMOTION_LIST : ACTION_CODES;
 
             // Filter for Mina (A2) in Action mode
             if (currentState.target === 'mina' && currentState.mode === 'action') {
