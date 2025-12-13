@@ -447,12 +447,8 @@
             const config = CHAR_CONFIG[charKey];
             const code = currentState.currentImgCode;
             
-            // Determine Type (Situation vs Action)
-            let type = "Situation";
-            if (parseInt(code) >= 21) type = "Action";
-            
-            // Format: A1_Situation_01.webp
-            const filename = `${config.code}_${type}_${code}.webp`;
+            // Use prefix based format (e.g. Yura_.01.webp)
+            const filename = `${config.prefix}${code}.webp`;
             const url = `${BASE_URL}${config.code}/${filename}`;
             
             const imgEl = document.getElementById('disp-img');
