@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Status Viewer (Variable Updated)</title>
+    <title>Character Status (Variable Logic Applied)</title>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <style>
         :root {
@@ -27,10 +27,10 @@
             user-select: none;
         }
 
-        /* 400x600 메인 프레임 */
+        /* 400x600 메인 프레임 -> 크기 확장 */
         .device-frame {
-            width: 400px;
-            height: 600px;
+            width: 450px; /* 너비 증가 */
+            height: 800px; /* 높이 대폭 증가 */
             background-color: #ffffff;
             border-radius: 20px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.25);
@@ -40,7 +40,7 @@
             border: 4px solid #fff;
         }
 
-        /* [좌측 사이드바] */
+        /* 사이드바 */
         .sidebar {
             width: 60px;
             height: 100%;
@@ -66,10 +66,9 @@
         .tab-btn[data-target="mina"].active { color: var(--c-mina); border-left: 4px solid var(--c-mina); }
         .tab-btn[data-target="minji"].active { color: var(--c-minji); border-left: 4px solid var(--c-minji); }
 
-        /* [우측 콘텐츠 영역] */
+        /* 콘텐츠 영역 */
         .content-area { flex: 1; position: relative; background: #fff; display: flex; flex-direction: column; }
-
-        /* 패널 공통 */
+        
         .char-panel {
             position: absolute; inset: 0;
             display: flex; flex-direction: column;
@@ -77,136 +76,109 @@
         }
         .char-panel.active { opacity: 1; visibility: visible; }
 
-        /* 1. 상단 이미지 뷰어 (Full Fill) */
+        /* 🖼️ 이미지 뷰어 (Hover Reveal 적용) */
         .img-viewport {
-            height: 250px;
+            height: 500px; /* 이미지 영역 대폭 확대 */
             width: 100%;
-            background-color: #eee;
+            background-color: #fff;
             position: relative;
-            overflow: hidden;
             border-bottom: 1px solid var(--border-color);
+            cursor: zoom-in;
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-
         .char-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 화면 꽉 채우기 */
-            object-position: top center; /* 얼굴 중심 */
-            transition: opacity 0.3s;
+            width: 100%; height: 100%;
+            object-fit: contain; /* 비율 유지하며 전체 표시 */
+            object-position: center;
+            transition: all 0.3s ease; background: #fff;
+        }
+        .img-viewport:hover {
+            height: 100%; position: absolute; top: 0; left: 0;
+            z-index: 100; border-bottom: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .img-viewport:hover .char-img {
+            object-fit: contain; object-position: center;
+            background-color: rgba(255,255,255,0.98); padding: 10px;
         }
 
+        /* 텍스트 정보 오버레이 */
         .name-tag {
             position: absolute; top: 12px; left: 12px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            color: #fff;
+            background: rgba(0, 0, 0, 0.6); color: #fff;
             padding: 4px 12px; border-radius: 20px;
             font-size: 0.8rem; font-weight: 700;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 5;
-            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 101; pointer-events: none;
         }
+        
+        /* 행동/감정 표시바 (이미지 하단) */
+        .action-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            font-size: 0.8rem; font-weight: 600; color: #2f3542;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: opacity 0.2s;
+        }
+        .img-viewport:hover .action-bar { opacity: 0; } /* 줌인 시 숨김 */
 
-        /* 2. 중단 상태창 */
+        /* 상태창 섹션 */
         .status-section {
             padding: 12px;
             background: #fff;
             border-bottom: 1px solid var(--border-color);
         }
 
+        /* 장소 이동 */
         .location-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; background: #f8f9fa; padding: 8px 12px;
+            border-radius: 8px; border: 1px solid var(--border-color);
         }
-        .loc-text { font-size: 0.85rem; font-weight: 700; color: #2f3542; display: flex; align-items: center; gap: 6px; }
+        .loc-text { font-size: 0.85rem; font-weight: 700; color: #2f3542; }
         .btn-move {
-            background: #2f3542; color: #fff;
-            border: none; padding: 6px 12px;
+            background: #2f3542; color: #fff; border: none; padding: 6px 12px;
             border-radius: 6px; font-size: 0.75rem; font-weight: bold;
-            cursor: pointer; transition: 0.2s;
+            cursor: pointer;
         }
-        .btn-move:hover { opacity: 0.8; }
         .yura .btn-move { background: var(--c-yura); }
         .mina .btn-move { background: var(--c-mina); }
         .minji .btn-move { background: var(--c-minji); }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
-            text-align: center;
-        }
-        .stat-box {
-            background: #fff; border: 1px solid var(--border-color);
-            border-radius: 6px; padding: 6px 4px;
-        }
+        /* 수치 그리드 */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; }
+        .stat-box { background: #fff; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 4px; }
         .s-label { display: block; font-size: 0.65rem; color: #a4b0be; margin-bottom: 3px; font-weight: 600; }
-        .s-val { font-size: 0.9rem; font-weight: 800; color: #2f3542; }
+        
+        /* 값 표시 디자인 */
+        .s-val { font-size: 0.8rem; font-weight: 700; color: #2f3542; display: flex; justify-content: center; align-items: center; gap: 4px; }
+        .s-val.dual { font-size: 0.75rem; } /* 두 개 표시될 때 폰트 작게 */
         .v-u { color: #ff4757; } .v-n { color: #2f3542; }
+        .emoji { font-size: 0.9rem; margin-right: 2px; }
 
-        /* 3. 하단 컨트롤 패널 */
-        .control-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #fdfdfd;
-            overflow: hidden;
-        }
-
-        .mode-switch {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-            background: #f1f2f6;
-        }
+        /* 컨트롤 패널 */
+        .control-panel { flex: 1; display: flex; flex-direction: column; background: #fdfdfd; overflow: hidden; }
+        .mode-switch { display: flex; border-bottom: 1px solid var(--border-color); background: #f1f2f6; }
         .mode-btn {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #a4b0be;
-            cursor: pointer;
-            transition: 0.2s;
+            flex: 1; padding: 12px; text-align: center; font-size: 0.85rem; font-weight: 700;
+            color: #a4b0be; cursor: pointer; transition: 0.2s;
         }
-        .mode-btn.active {
-            background: #fff;
-            color: #2f3542;
-            border-bottom: 3px solid #2f3542;
-        }
+        .mode-btn.active { background: #fff; color: #2f3542; border-bottom: 3px solid #2f3542; }
 
         .code-list-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            gap: 6px;
+            flex: 1; overflow-y: auto; padding: 10px;
+            display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px;
         }
-        
         .chip-btn {
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            background: #fff;
-            border: 1px solid #dcdde1;
-            border-radius: 16px;
-            cursor: pointer;
-            color: #57606f;
-            transition: 0.1s;
-            font-weight: 600;
+            padding: 6px 12px; font-size: 0.75rem; background: #fff;
+            border: 1px solid #dcdde1; border-radius: 16px; cursor: pointer;
+            color: #57606f; transition: 0.1s; font-weight: 600;
         }
-        .chip-btn:hover { background: #f1f2f6; border-color: #747d8c; color: #2f3542; }
         .chip-btn.active { background: #2f3542; color: #fff; border-color: #2f3542; }
         .chip-btn.nsfw { border-color: #fab1a0; color: #d63031; background: #fff0f0; }
-        .chip-btn.nsfw.active { background: #d63031; color: #fff; border-color: #d63031; }
-        .code-list-container::-webkit-scrollbar { width: 6px; }
-        .code-list-container::-webkit-scrollbar-thumb { background: #dcdde1; border-radius: 3px; }
+        .chip-btn.nsfw.active { background: #d63031; color: #fff; }
 
     </style>
 </head>
@@ -223,50 +195,68 @@
             
             <div id="main-panel" class="char-panel active yura">
                 
-                <!-- 상단: 이미지 -->
+                <!-- 상단 이미지 -->
                 <div class="img-viewport">
                     <div class="name-tag" id="disp-name">최유라 (A1)</div>
                     <img id="disp-img" class="char-img" src="" alt="Character">
+                    
+                    <!-- 행동 및 감정 표시줄 -->
+                    <div class="action-bar">
+                        <span id="disp-action">행동: -</span>
+                        <span id="disp-emotion">감정: -</span>
+                    </div>
                 </div>
 
-                <!-- 중단: 상태 -->
+                <!-- 상태창 -->
                 <div class="status-section">
                     <div class="location-row">
                         <div class="loc-text">
-                            <span>📍</span><span id="disp-loc">장소 미정</span>
+                            📍 <span id="disp-loc">장소 미정</span>
                         </div>
-                        <button class="btn-move" onclick="moveToLocation()">이동하기</button>
+                        <button class="btn-move" onclick="requestMove()">이동하기</button>
                     </div>
 
                     <div class="stats-grid">
+                        <!-- 호감도 -->
                         <div class="stat-box">
                             <span class="s-label">💗 호감(U/남)</span>
-                            <span class="s-val"><span class="v-u" id="val-u-fav">0</span> / <span class="v-n" id="val-k-fav">0</span></span>
+                            <div class="s-val dual">
+                                <span class="v-u"><span id="emj-u-fav">💔</span><span id="val-u-fav">0</span></span>
+                                <span style="margin:0 4px; color:#ddd;">|</span>
+                                <span class="v-n"><span id="emj-k-fav">💔</span><span id="val-k-fav">0</span></span>
+                            </div>
                         </div>
+                        <!-- 의존도 -->
                         <div class="stat-box">
                             <span class="s-label">🔗 의존(U/남)</span>
-                            <span class="s-val"><span class="v-u" id="val-u-dep">0</span> / <span class="v-n" id="val-k-dep">0</span></span>
+                            <div class="s-val dual">
+                                <span class="v-u"><span id="emj-u-dep">🛡️</span><span id="val-u-dep">0</span></span>
+                                <span style="margin:0 4px; color:#ddd;">|</span>
+                                <span class="v-n"><span id="emj-k-dep">🛡️</span><span id="val-k-dep">0</span></span>
+                            </div>
                         </div>
+                        <!-- 횟수 -->
                         <div class="stat-box">
                             <span class="s-label">💦 횟수(U/남)</span>
-                            <span class="s-val"><span class="v-u" id="val-u-cnt">0</span> / <span class="v-n" id="val-k-cnt">0</span></span>
+                            <div class="s-val dual">
+                                <span class="v-u" id="val-u-cnt">0</span>
+                                <span style="margin:0 4px; color:#ddd;">|</span>
+                                <span class="v-n" id="val-k-cnt">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 하단: 컨트롤 -->
+                <!-- 하단 컨트롤 -->
                 <div class="control-panel">
                     <div class="mode-switch">
                         <div class="mode-btn active" onclick="setMode('emotion')" id="tab-emotion">😊 감정/일상</div>
                         <div class="mode-btn" onclick="setMode('action')" id="tab-action">🔞 성행위</div>
                     </div>
-                    <div class="code-list-container" id="code-list">
-                        <!-- 버튼 목록 -->
-                    </div>
+                    <div class="code-list-container" id="code-list"></div>
                 </div>
 
             </div>
-
         </main>
     </div>
 
@@ -284,7 +274,6 @@
             "nervous_smile","nervous","pout","proud","sad","scared","seductive_smile","serious","shocked",
             "sleepy","smile","smirk","smug","surprised","thinking","worried","evil_smile","comforted","childlike_whining"
         ];
-
         const ACTION_CODES = [];
         for(let i=21; i<=110; i++) ACTION_CODES.push(i);
 
@@ -294,51 +283,69 @@
             minji: { name: "김민지", code: "A3", prefix: "Minji_." }
         };
 
-        // 🟢 [핵심] 요청하신 변수명으로 데이터 구조 변경
+        // 🟢 [상태 저장소] 외부 노드에서 이 변수명을 맞춰주세요.
         let currentState = {
             target: 'yura',
             mode: 'emotion',
             currentImgCode: 'standing',
             
-            // 데이터 초기화
             data: {
                 yura: {
-                    location: "",           // 장소
-                    u_favorability: 0,      // 호감u
-                    k_favorability: 0,      // 호감남
-                    u_dependency: 0,        // 의존u
-                    k_dependency: 0,        // 의존남
-                    u_count: 0,             // 횟수
-                    k_count: 0              // 횟수남
+                    location: "침실", // 초기값
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
                 },
                 mina: {
-                    location: "",
-                    u_favorability: 0,
-                    k_favorability: 0,
-                    u_dependency: 0,
-                    k_dependency: 0,
-                    u_count: 0,
-                    k_count: 0
+                    location: "거실",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
                 },
                 minji: {
-                    location: "",
-                    u_favorability: 0,
-                    k_favorability: 0,
-                    u_dependency: 0,
-                    k_dependency: 0,
-                    u_count: 0,
-                    k_count: 0
+                    location: "연습실",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
                 }
             }
         };
 
         // -----------------------------------------------------------
-        // 2. 기능 로직
+        // 2. 이모지 계산 로직
+        // -----------------------------------------------------------
+        
+        // 💗 호감 이모지 계산
+        function getFavEmoji(val) {
+            const v = parseInt(val) || 0;
+            if (v <= 20) return "💔"; // 무관심/혐오
+            if (v <= 50) return "🌱"; // 관심/호기심
+            if (v <= 80) return "🔥"; // 사랑/욕정
+            return "🛐";             // 숭배/맹목
+        }
+
+        // 🔗 의존 이모지 계산
+        function getDepEmoji(val) {
+            const v = parseInt(val) || 0;
+            if (v <= 20) return "🛡️"; // 자립/반항
+            if (v <= 50) return "⛓️"; // 동요/갈등
+            if (v <= 80) return "🐕"; // 복종/순응
+            return "🏳️";             // 노예화/붕괴
+        }
+
+        // -----------------------------------------------------------
+        // 3. 기능 및 UI 갱신
         // -----------------------------------------------------------
 
         function changeChar(charKey) {
             currentState.target = charKey;
-            currentState.currentImgCode = 'standing'; // 리셋
+            currentState.currentImgCode = 'standing';
             
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
@@ -357,15 +364,18 @@
             renderCodeList();
         }
 
-        // 장소 이동 (변수명: location 사용)
-        function moveToLocation() {
+        // 장소 이동 요청
+        function requestMove() {
             const charName = CHAR_CONFIG[currentState.target].name;
-            const newLoc = prompt(`[${charName}] 이동할 장소를 입력하세요:`, "침실");
+            // 실제 노드 환경에서는 여기서 서버로 요청을 보내야 합니다.
+            // 여기서는 테스트를 위해 prompt로 값을 받아 내부 변수를 수정합니다.
+            const newLoc = prompt(`[${charName}] 이동할 장소를 입력하세요:\n(변수명: location)`, "욕실");
+            
             if(newLoc) {
                 // 데이터 업데이트
                 currentState.data[currentState.target].location = newLoc;
-                alert(`[System] ${charName} 이(가) [${newLoc}]으로 이동했습니다.`);
-                renderUI();
+                alert(`[System] 이동 명령 확인: ${newLoc}`);
+                renderUI(); // 화면 즉시 갱신
             }
         }
 
@@ -377,34 +387,41 @@
             });
         }
 
-        // -----------------------------------------------------------
-        // 3. UI 렌더링 (변수명 매핑)
-        // -----------------------------------------------------------
-
         function renderUI() {
             const charKey = currentState.target;
             const config = CHAR_CONFIG[charKey];
-            
-            // 현재 캐릭터의 데이터 객체 가져오기
             const d = currentState.data[charKey];
 
-            // 텍스트 갱신
-            document.getElementById('disp-name').innerText = `${config.name} (${config.code})`;
-            
-            // 🟢 변수 매핑 적용
-            document.getElementById('disp-loc').innerText = d.location || "장소 미정";
-            
-            document.getElementById('val-u-fav').innerText = d.u_favorability;
-            document.getElementById('val-k-fav').innerText = d.k_favorability;
-            
-            document.getElementById('val-u-dep').innerText = d.u_dependency;
-            document.getElementById('val-k-dep').innerText = d.k_dependency;
-            
-            document.getElementById('val-u-cnt').innerText = d.u_count;
-            document.getElementById('val-k-cnt').innerText = d.k_count;
+            // 1. 기본 정보
+            setText('disp-name', `${config.name} (${config.code})`);
+            setText('disp-loc', d.location || "장소 미정");
+            setText('disp-emotion', `감정: ${d.emotion}`);
+            setText('disp-action', `행동: ${d.action}`);
+
+            // 2. 수치 및 이모지 적용
+            // 호감도
+            setText('val-u-fav', d.u_favorability);
+            setText('emj-u-fav', getFavEmoji(d.u_favorability));
+            setText('val-k-fav', d.k_favorability);
+            setText('emj-k-fav', getFavEmoji(d.k_favorability));
+
+            // 의존도
+            setText('val-u-dep', d.u_dependency);
+            setText('emj-u-dep', getDepEmoji(d.u_dependency));
+            setText('val-k-dep', d.k_dependency);
+            setText('emj-k-dep', getDepEmoji(d.k_dependency));
+
+            // 횟수
+            setText('val-u-cnt', d.u_count);
+            setText('val-k-cnt', d.k_count);
 
             updateImage();
             renderCodeList();
+        }
+
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
         }
 
         function updateImage() {
@@ -414,9 +431,7 @@
             const url = `${BASE_URL}${config.code}/${config.prefix}${code}.webp`;
             
             const imgEl = document.getElementById('disp-img');
-            if (imgEl.src !== url) {
-                imgEl.src = url;
-            }
+            if (imgEl.src !== url) imgEl.src = url;
         }
 
         function renderCodeList() {
@@ -437,6 +452,17 @@
                 btn.onclick = () => selectCode(code);
                 container.appendChild(btn);
             });
+        }
+
+        // 🧪 [테스트] 외부 노드에서 데이터가 들어오는 것을 시뮬레이션
+        // 실제 사용 시 이 함수를 호출하여 데이터를 넣어주세요.
+        function updateFromNode(charKey, newData) {
+            if(currentState.data[charKey]) {
+                // 기존 데이터에 덮어쓰기
+                Object.assign(currentState.data[charKey], newData);
+                // 현재 보고 있는 캐릭터라면 UI 갱신
+                if(currentState.target === charKey) renderUI();
+            }
         }
 
         // 초기 실행
