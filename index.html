@@ -11,6 +11,7 @@
             --c-mina: #3742fa;
             --c-minji: #a55eea;
             --c-serin: #2ed573;
+            --c-sohee: #2f3542;
             --bg-gray: #f1f2f6;
             --text-main: #2f3542;
             --border-color: #dcdde1;
@@ -67,6 +68,7 @@
         .tab-btn[data-target="mina"].active { color: var(--c-mina); border-left: 4px solid var(--c-mina); }
         .tab-btn[data-target="minji"].active { color: var(--c-minji); border-left: 4px solid var(--c-minji); }
         .tab-btn[data-target="serin"].active { color: var(--c-serin); border-left: 4px solid var(--c-serin); }
+        .tab-btn[data-target="sohee"].active { color: var(--c-sohee); border-left: 4px solid var(--c-sohee); }
 
         /* 콘텐츠 영역 */
         .content-area { flex: 1; position: relative; background: #fff; display: flex; flex-direction: column; }
@@ -148,6 +150,8 @@
         .yura .btn-move { background: var(--c-yura); }
         .mina .btn-move { background: var(--c-mina); }
         .minji .btn-move { background: var(--c-minji); }
+        .serin .btn-move { background: var(--c-serin); }
+        .sohee .btn-move { background: var(--c-sohee); }
 
         /* 수치 그리드 */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; }
@@ -192,6 +196,7 @@
             <div class="tab-btn" onclick="changeChar('mina')" data-target="mina"><span>B</span><small>A2</small></div>
             <div class="tab-btn" onclick="changeChar('minji')" data-target="minji"><span>C</span><small>A3</small></div>
             <div class="tab-btn" onclick="changeChar('serin')" data-target="serin"><span>D</span><small>A4</small></div>
+            <div class="tab-btn" onclick="changeChar('sohee')" data-target="sohee"><span>E</span><small>A5</small></div>
         </nav>
 
         <main class="content-area">
@@ -295,7 +300,8 @@
             yura:  { name: "최유라", code: "A1", prefix: "Yura_." },
             mina:  { name: "김민아", code: "A2", prefix: "Minah_." },
             minji: { name: "김민지", code: "A3", prefix: "Minji_." },
-            serin: { name: "한세린", code: "A4", prefix: "Serin_." }
+            serin: { name: "한세린", code: "A4", prefix: "Serin_." },
+            sohee: { name: "박소희", code: "A5", prefix: "Sohee_." }
         };
 
         // 🟢 [상태 저장소] 외부 노드에서 이 변수명을 맞춰주세요.
@@ -331,6 +337,14 @@
                 },
                 serin: {
                     location: "도서관",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
+                },
+                sohee: {
+                    location: "회사",
                     emotion: "기본😐",
                     action: "대기 중",
                     u_favorability: 0, k_favorability: 0,
@@ -374,7 +388,7 @@
             document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
 
             const panel = document.getElementById('main-panel');
-            panel.classList.remove('yura', 'mina', 'minji', 'serin');
+            panel.classList.remove('yura', 'mina', 'minji', 'serin', 'sohee');
             panel.classList.add(charKey);
 
             renderUI();
