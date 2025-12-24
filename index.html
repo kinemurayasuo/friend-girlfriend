@@ -14,6 +14,8 @@
             --c-sohee: #2f3542;
             --c-elena: #f1c40f;
             --c-minju: #ffa502;
+            --c-haeun: #9b59b6;
+            --c-cha: #1abc9c;
             --bg-gray: #f1f2f6;
             --text-main: #2f3542;
             --border-color: #dcdde1;
@@ -73,6 +75,8 @@
         .tab-btn[data-target="sohee"].active { color: var(--c-sohee); border-left: 4px solid var(--c-sohee); }
         .tab-btn[data-target="elena"].active { color: var(--c-elena); border-left: 4px solid var(--c-elena); }
         .tab-btn[data-target="minju"].active { color: var(--c-minju); border-left: 4px solid var(--c-minju); }
+        .tab-btn[data-target="haeun"].active { color: var(--c-haeun); border-left: 4px solid var(--c-haeun); }
+        .tab-btn[data-target="cha"].active { color: var(--c-cha); border-left: 4px solid var(--c-cha); }
 
         /* 콘텐츠 영역 */
         .content-area { flex: 1; position: relative; background: #fff; display: flex; flex-direction: column; }
@@ -158,6 +162,8 @@
         .sohee .btn-move { background: var(--c-sohee); }
         .elena .btn-move { background: var(--c-elena); }
         .minju .btn-move { background: var(--c-minju); }
+        .haeun .btn-move { background: var(--c-haeun); }
+        .cha .btn-move { background: var(--c-cha); }
 
         /* 수치 그리드 */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; }
@@ -205,6 +211,8 @@
             <div class="tab-btn" onclick="changeChar('sohee')" data-target="sohee"><span>E</span><small>A5</small></div>
             <div class="tab-btn" onclick="changeChar('elena')" data-target="elena"><span>F</span><small>A6</small></div>
             <div class="tab-btn" onclick="changeChar('minju')" data-target="minju"><span>G</span><small>A7</small></div>
+            <div class="tab-btn" onclick="changeChar('haeun')" data-target="haeun"><span>H</span><small>A8</small></div>
+            <div class="tab-btn" onclick="changeChar('cha')" data-target="cha"><span>I</span><small>A9</small></div>
         </nav>
 
         <main class="content-area">
@@ -311,7 +319,9 @@
             serin: { name: "한세린", code: "A4", prefix: "Serin_." },
             sohee: { name: "박소희", code: "A5", prefix: "Sohee_." },
             elena: { name: "엘레나", code: "A6", prefix: "Vista_." },
-            minju: { name: "김민주", code: "A7", prefix: "Minju_." }
+            minju: { name: "김민주", code: "A7", prefix: "Minju_." },
+            haeun: { name: "이하은", code: "A8", prefix: "Haeun_." },
+            cha:   { name: "차예린", code: "A9", prefix: "Cha_." }
         };
 
         // 🟢 [상태 저장소] 외부 노드에서 이 변수명을 맞춰주세요.
@@ -376,6 +386,22 @@
                     u_favorability: 0, k_favorability: 0,
                     u_dependency: 0, k_dependency: 0,
                     u_count: 0, k_count: 0
+                },
+                haeun: {
+                    location: "학교",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
+                },
+                cha: {
+                    location: "공원",
+                    emotion: "기본😐",
+                    action: "대기 중",
+                    u_favorability: 0, k_favorability: 0,
+                    u_dependency: 0, k_dependency: 0,
+                    u_count: 0, k_count: 0
                 }
             }
         };
@@ -414,7 +440,7 @@
             document.querySelector(`.tab-btn[data-target="${charKey}"]`).classList.add('active');
 
             const panel = document.getElementById('main-panel');
-            panel.classList.remove('yura', 'mina', 'minji', 'serin', 'sohee', 'elena', 'minju');
+            panel.classList.remove('yura', 'mina', 'minji', 'serin', 'sohee', 'elena', 'minju', 'haeun', 'cha');
             panel.classList.add(charKey);
 
             renderUI();
